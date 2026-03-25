@@ -60,6 +60,7 @@ function update() {
         // Check collision with bot
         if (b.x > bot.x && b.x < bot.x + bot.width && b.y > bot.y && b.y < bot.y + bot.height) {
             bot.hp -= 10;
+            score += 1;
             bullets.splice(i, 1);
             continue;
         }
@@ -90,6 +91,7 @@ function update() {
     document.getElementById('hp').innerText = Math.floor(player.hp);
     document.getElementById('bothp').innerText = Math.max(0, Math.floor(bot.hp));
     document.getElementById('bullets').innerText = bullets.length;
+    document.getElementById('score').innerText = score;
 }
 
 function draw() {
