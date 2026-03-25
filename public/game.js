@@ -14,26 +14,75 @@ const bot = {
 };
 
 const bullets = [];
+const obstacles = [];
 let score = 0;
 const keys = {};
+
+// Create random obstacles
+for (let i = 0; i < 5; i++) {
+    obstacles.push({
+        x: Math.random() * (canvas.width - 100) + 50,
+        y: Math.random() * (canvas.height - 100) + 50,
+        width: Math.random() * 50 + 20,
+        height: Math.random() * 50 + 20,
+        color: '#888'
+    });
+}
 
 // Track key presses
 window.addEventListener('keydown', e => keys[e.code] = true);
 window.addEventListener('keyup', e => keys[e.code] = false);
 
+function isColliding(rect1, rect2) {
+    return rect1.x < rect2.x + rect2.width &&
+           rect1.x + rect1.width > rect2.x &&
+           rect1.y < rect2.y + rect2.height &&
+           rect1.y + rect1.height > rect2.y;
+}
+
 function update() {
     // Player Movement and Direction
-    if (keys['ArrowUp'] && player.y > 0) { player.y -= player.speed; player.dirX = 0; player.dirY = -1; }
-    if (keys['ArrowDown'] && player.y < canvas.height - player.height) { player.y += player.speed; player.dirX = 0; player.dirY = 1; }
-    if (keys['ArrowLeft'] && player.x > 0) { player.x -= player.speed; player.dirX = -1; player.dirY = 0; }
-    if (keys['ArrowRight'] && player.x < canvas.width - player.width) { player.x += player.speed; player.dirX = 1; player.dirY = 0; }
+    let nextX = player.x;
+    let nextY = player.y;
+
+    if (keys['ArrowUp'] && player.y > 0) { nextY -= player.speed; player.dirX = 0; player.dirY = -1; }
+    if (keys['ArrowDown'] && player.y < canvas.height - player.height) { nextY += player.speed; player.dirX = 0; player.dirY = 1; }
+    if (keys['ArrowLeft'] && player.x > 0) { nextX -= player.speed; player.dirX = -1; player.dirY = 0; }
+    if (keys['ArrowRight'] && player.x < canvas.width - player.width) { nextX += player.speed; player.dirX = 1; player.dirY = 0; }
+
+    let isPlayerColliding = false;
+    for (let obs of obstacles) {
+        if (isColliding({ ...player, x: nextX, y: nextY }, obs)) {
+            isPlayerColliding = true;
+            break;
+        }
+    }
+    if (!isPlayerColliding) {
+        player.x = nextX;
+        player.y = nextY;
+    }
 
     // Basic Bot AI (Chase the player)
-    if (bot.x < player.x) bot.x += bot.speed;
-    else if (bot.x > player.x) bot.x -= bot.speed;
+    let botNextX = bot.x;
+    let botNextY = bot.y;
 
-    if (bot.y < player.y) bot.y += bot.speed;
-    else if (bot.y > player.y) bot.y -= bot.speed;
+    if (bot.x < player.x) botNextX += bot.speed;
+    else if (bot.x > player.x) botNextX -= bot.speed;
+
+    if (bot.y < player.y) botNextY += bot.speed;
+    else if (bot.y > player.y) botNextY -= bot.speed;
+
+    let isBotColliding = false;
+    for (let obs of obstacles) {
+        if (isColliding({ ...bot, x: botNextX, y: botNextY }, obs)) {
+            isBotColliding = true;
+            break;
+        }
+    }
+    if (!isBotColliding) {
+        bot.x = botNextX;
+        bot.y = botNextY;
+    }
 
     // Shooting Logic (Space to Shoot)
     if (keys['Space']) {
@@ -63,6 +112,14 @@ function update() {
             score += 1;
             bullets.splice(i, 1);
             continue;
+        }
+
+        // Check collision with obstacles
+        for (let obs of obstacles) {
+            if (b.x > obs.x && b.x < obs.x + obs.width && b.y > obs.y && b.y < obs.y + obs.height) {
+                bullets.splice(i, 1);
+                break;
+            }
         }
 
         // Remove if off-screen
@@ -96,6 +153,12 @@ function update() {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw Obstacles
+    for (let obs of obstacles) {
+        ctx.fillStyle = obs.color;
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+    }
 
     // Draw Bullets
     for (let b of bullets) {
